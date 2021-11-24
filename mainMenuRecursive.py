@@ -9,35 +9,18 @@ import gc
 import filesMenu
 import sensorsMenu
 import parametersMenu
-
+import menuEnum
 from machine import UART, Pin
 from machine import ADC, Pin
 from machine import WDT
-'''
-A2D_PIN_26 = 26
-A2D_PIN_27 = 27
-sensor_temp = machine.ADC(4)
-conversion_factor = 3.3 / (65535)
-'''
+
 uart0 = UART(0, baudrate= 57600, tx=Pin(0), rx=Pin(1))#115200, tx=Pin(0), rx=Pin(1))
 ledMode = False
 led = Pin(25, Pin.OUT)                     
 led.value(0)
 menu_retuen_count = 0
 
-def enum(**enums):
-    return type('Enum', (), enums)
-
-menuEnum = enum (
-    mainMenu = 0x00,
-    rp2040Status_temperatue = 0x01,
-    rp2040Status_A2D = 0x02,
-    rp2040Status_memoey_usage = 0x03,
-    main_menu_led_toggle = 0x04,
-    main_menu_files_menu = 0x05,
-    
-)
-mainMenuStatus = menuEnum.mainMenu
+mainMenuStatus = menuEnum.menuEnum.mainMenu
 
 sub_main_menu_call_count = 0
 files_menu_rx_prev = '0'
@@ -71,22 +54,22 @@ def main_menu_handler():
  count = 0
  menu_retuen = '0'
   
- while  True:   
+ while  True:
+    wdt.feed()      
+    utime.sleep(0.1) 
     while uart0.any() > 0:
 
           rxData0 = uart0.read(1)
-          count +=1
-          if count > 0:
-             if rxData0 != b'\xff':
-                  rx_ = rxData0.decode('utf-8')
+          if rxData0 != b'\xff':
+             rx_ = rxData0.decode('utf-8')          
           if rx_ == '0':
                   pass
           elif rx_ == '1' and rx_prev != '1':
                     rx_prev = rx_          
                     menu_retuen = main_menu(sensorsMenu.sensors_menu_display(),sensorsMenu.sensors_menu_handler())
           elif rx_ == '2':
-                 if mainMenuStatus == menuEnum.mainMenu or mainMenuStatus == menuEnum.main_menu_led_toggle:
-                     mainMenuStatus = menuEnum.main_menu_led_toggle
+                 if mainMenuStatus == menuEnum.menuEnum.mainMenu or mainMenuStatus == menuEnum.menuEnum.main_menu_led_toggle:
+                     mainMenuStatus = menuEnum.menuEnum.main_menu_led_toggle
                      led = Pin(25, Pin.OUT)                     
                      if (ledMode == False):
                          ledMode = True
@@ -95,39 +78,36 @@ def main_menu_handler():
                          ledMode = False
                          led.value(0)
           elif rx_ == 'f':                 
-                 if rx_prev != 'f' and mainMenuStatus == menuEnum.mainMenu:
+                 if rx_prev != 'f' and mainMenuStatus == menuEnum.menuEnum.mainMenu:
                     rx_prev = rx_
                     menu_retuen = main_menu(filesMenu.files_menu_display(),filesMenu.files_menu_handler())
           elif rx_ == 'p':                 
-                 if rx_prev != 'p' and mainMenuStatus == menuEnum.mainMenu:
+                 if rx_prev != 'p' and mainMenuStatus == menuEnum.menuEnum.mainMenu:
                     rx_prev = rx_
                     menu_retuen = main_menu(parametersMenu.parameters_menu_display(),parametersMenu.parameters_menu_handler())
           elif rx_ == 'q':
-                 if rx_prev != 'q' and mainMenuStatus == menuEnum.mainMenu:
+                 if rx_prev != 'q' and mainMenuStatus == menuEnum.menuEnum.mainMenu:
                    rx_prev = rx_
                    menu_retuen = None                  
                    return False
           elif rx_== '\x1B':  #***ESC***#
                  if (rx_prev != '\x1B'):
-                   rx_prev = '\x1B'  #ESC
-                   mainMenuStatus = menuEnum.mainMenu
+                   rx_prev = '\x1B'  
+                   mainMenuStatus = menuEnum.menuEnum.mainMenu
                    main_menu_display()
                    uart0.write('\r enter option: '+rx_)
           else:
                    uart0.write('\r enter option: '+rx_)
-                   mainMenuStatus = menuEnum.mainMenu
+                   mainMenuStatus = menuEnum.menuEnum.mainMenu
           if menu_retuen == 'EXIT':
                    menu_retuen = '0'
                    menu_retuen_count += 1
                    if menu_retuen_count > 1:
                       return 
-          elif mainMenuStatus == menuEnum.main_menu_led_toggle:
+          elif mainMenuStatus == menuEnum.menuEnum.main_menu_led_toggle:
                    main_menu_display()
-                   #return True
           elif menu_retuen == None:
                    return False
-    wdt.feed()      
-    utime.sleep(0.1)
     count = 0 
  return True
 
@@ -135,10 +115,8 @@ def main_menu(display, handler):
     x= True
     while x != False:       
      if (display == True): 
-       #uart0.write("\r Enter option-------")
-       #print("\n Enter option-------")
        x = handler
-       if x == None or x == 'ESC':
+       if x == None: 
         return 'ESC'
        elif x == True:
         return 'EXIT'

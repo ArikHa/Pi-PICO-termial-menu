@@ -4,8 +4,7 @@ import binascii
 import machine
 import utime
 import os
-#import _thread, gc
-#import HCG_send
+import menuEnum
 import uasyncio
 import gc
 from machine import UART, Pin
@@ -15,19 +14,7 @@ uart0 = UART(0, baudrate= 57600, tx=Pin(0), rx=Pin(1))#115200, tx=Pin(0), rx=Pin
 
 menu_retuen_count = 0
 
-def enum(**enums):
-    return type('Enum', (), enums)
-
-menuEnum = enum (
-    mainMenu = 0x00,
-    rp2040Status_temperatue = 0x01,
-    rp2040Status_A2D = 0x02,
-    rp2040Status_memoey_usage = 0x03,
-    main_menu_led_toggle = 0x04,
-    main_menu_files_menu = 0x05,
-    
-)
-mainMenuStatus = menuEnum.mainMenu
+mainMenuStatus = menuEnum.menuEnum.mainMenu
 
 sub_main_menu_call_count = 0
 files_menu_rx_prev = '0'
@@ -54,15 +41,12 @@ def print_Main_py_File():
 def getMemoryUsage():
      fileList=os.listdir()
      uart0.write("\rNo    file Nane \t\t\t\t  size \n")
-     #print("No    file Nane \t\t\t\t  size ")
      totalZise = 0    
      for l in range(len(fileList)):
        file = open(fileList[l], "R")       
        fileCharacters = file.read()
        X =len(fileCharacters)        
-       uart0.write('\r' + str(l+1)+'\t'+fileList[l] + '\t\t\t\t ' +str(X)+'\n')
-       print('len =', len(fileList[l]))
-       #print(l+1,'\t', fileList[l],'  \t\t\t\t  ',X)
+       uart0.write('\r' + str(l+1)+'\t'+fileList[l] + '\t\t\t\t ' +str(X)+'\n')       
        totalZise +=X
        file.close()
        utime.sleep(0.001) 
@@ -86,32 +70,25 @@ def files_menu_handler():
     rx_ =  '0'
     rxData0 = '0'
     
-    while True: #rx_prev != '\x1B': #'ESC': #True:   
+    while True: 
      utime.sleep(0.1)
      wdt.feed()     
      count = 0
-     #wdt.feed()
-     #uart0.write('\n\n SUB MUENU rx_prev = ' + rx_prev)
-     while uart0.any() > 0:
-       #try:  
+     
+     while uart0.any() > 0:       
           rxData0 = uart0.read(1)
-          #print('sub menu rxData0 = ',rxData0)
           count +=1
-          #print('count =', count)
-          if count > 0:
-          #print('sub menu key count =', count, 'rxData0 hex = ',hex(rxData0))
           
+          if count > 0:
              if rxData0 != b'\xff':    
                     rx_ = rxData0.decode('utf-8')
              if rx_ == '1' and files_menu_rx_prev != '1':
-                    #print(' sub menu rx_prev != 1') 
                     uart0.write('\n\n')
                     getMemoryUsage()
                     files_menu_rx_prev = rx_
-                    mainMenuStatus = menuEnum.main_menu_files_menu
+                    mainMenuStatus = menuEnum.menuEnum.main_menu_files_menu
              elif rx_ == '2' and files_menu_rx_prev != '2':
                     systemVersion = os.uname()
-                    #print(systemVersion, 'files_menu_rx_prev =' , files_menu_rx_prev)
                     files_menu_rx_prev  = rx_                                        
                     for l in range(len(systemVersion)):
                         if l == 0:
@@ -125,7 +102,7 @@ def files_menu_handler():
                         elif l == 4:
                            uart0.write("\n\r machine="+ systemVersion[l]+")\n")
                     uart0.write("\n\r type ESC. back to menu\n")
-                    mainMenuStatus = menuEnum.main_menu_files_menu
+                    mainMenuStatus = menuEnum.menuEnum.main_menu_files_menu
              elif rx_ == '3' and files_menu_rx_prev != '3':
                     files_menu_rx_prev  = rx_
                     try:
@@ -134,20 +111,19 @@ def files_menu_handler():
                       file.close() 
                       os.remove("temperature.txt")
                     except:
-                      #print('temperature.txt already delete')
                       uart0.write("\n\r temperature.txt already delete\n")
                       uart0.write("\n\r type ESC. back to menu\n")
-                    mainMenuStatus = menuEnum.main_menu_files_menu
+                    mainMenuStatus = menuEnum.menuEnum.main_menu_files_menu
              elif rx_ == '4' and files_menu_rx_prev != '4':
                     files_menu_rx_prev  = rx_
                     print_Main_py_File()    
-                    mainMenuStatus = menuEnum.main_menu_files_menu
+                    mainMenuStatus = menuEnum.menuEnum.main_menu_files_menu
              elif rx_== '\x1B' and files_menu_rx_prev != '\x1B':
                   files_menu_rx_prev  = '\x1B'  #ESC
-                  if mainMenuStatus == menuEnum.mainMenu:
+                  if mainMenuStatus == menuEnum.menuEnum.mainMenu:
                       return True
                   else:  
-                      mainMenuStatus = menuEnum.mainMenu
+                      mainMenuStatus = menuEnum.menuEnum.mainMenu
                       files_menu_display()
 
              elif rx_== '\x1B' and files_menu_rx_prev  == '\x1B':                 
@@ -157,10 +133,10 @@ def files_menu_handler():
                  files_menu_rx_prev = '0'
                  files_menu_display()
                  uart0.write('\r enter option: '+rx_)                      
-    return False
+    #return False
 
 '''
 while True:
     files_menu_display()
     files_menu_handler()    
-'''    
+'''  

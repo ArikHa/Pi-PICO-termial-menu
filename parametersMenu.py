@@ -7,7 +7,8 @@ import os
 import uasyncio
 import gc
 import sensorsMenu
-#import filesMenu
+import menuEnum
+
 
 from machine import UART, Pin
 from machine import ADC, Pin
@@ -23,14 +24,7 @@ led = Pin(25, Pin.OUT)
 led.value(0)
 menu_retuen_count = 0
 
-def enum(**enums):
-    return type('Enum', (), enums)
-
-menuEnum = enum (
-    mainMenu = 0x00,
-    parmetersSet = 0x01,
-)
-mainMenuStatus = menuEnum.mainMenu
+mainMenuStatus = menuEnum.menuEnum.mainMenu
 
 sub_main_menu_call_count = 0
 files_menu_rx_prev = '0'
@@ -70,17 +64,12 @@ def readParametersFile():
         file = open('parametersOffset.txt','R')
         for line in file:
             count += 1
-            #print("Line{}: {}".format(count, gtParameterFromLine(line))) #.strip()))
-            #uart0.write("\n\rLine{}: {}".format(count, gtParameterFromLine(line))) #.strip()))
-            #print(getParameterFromLine(line)[1])
             if count == 1:
                 horizonOffset = float(getParameterFromLine(line)[1])
-                uart0.write("\n\r horizonOffset = " + str(horizonOffset))
-                #print("horizonOffset = ",horizonOffset)
+                uart0.write("\n\r horizonOffset = " + str(horizonOffset))                
             elif  count == 2:
                 verticalOffset = float(getParameterFromLine(line)[1])
-                uart0.write("\n\rverticalOffset = " + str(verticalOffset))
-                #print("verticalOffset = ", verticalOffset)
+                uart0.write("\n\rverticalOffset = " + str(verticalOffset))                
             
         file.close()
         
@@ -95,11 +84,11 @@ def readParametersFile():
 def parameters_menu_handler():
     global wdt, files_menu_rx_prev, mainMenuStatus
     global horizonOffset, verticalOffset
-    #dataloger = open("/temperature.txt", "a")
+    
     
     rx_ =  '0'
     rxData0 = '0'
-    while True: #rx_prev != '\x1B': #'ESC': #True:   
+    while True: 
      utime.sleep(0.2)
      wdt.feed()     
      count = 0
@@ -112,34 +101,30 @@ def parameters_menu_handler():
                   rx_ = rxData0.decode('utf-8')
              if rx_ == '7':
                   horizonOffset += 0.10
-                  #uart0.write('\r horizonOffset : '+str(horizonOffset))
                   files_menu_rx_prev = '7'
-                  mainMenuStatus = menuEnum.parmetersSet
+                  mainMenuStatus = menuEnum.menuEnum.parmetersSet
              elif rx_ == '1':
-                  horizonOffset -= 0.10
-                  #uart0.write('\r horizonOffset : '+str(horizonOffset))
+                  horizonOffset -= 0.10                  
                   files_menu_rx_prev = '1'
-                  mainMenuStatus = menuEnum.parmetersSet
+                  mainMenuStatus = menuEnum.menuEnum.parmetersSet
              elif rx_ == '8':
-                  verticalOffset += 0.10
-                  #uart0.write('\r verticalOffset :'+str(verticalOffset))
+                  verticalOffset += 0.10                  
                   files_menu_rx_prev = '8'
-                  mainMenuStatus = menuEnum.parmetersSet
+                  mainMenuStatus = menuEnum.menuEnum.parmetersSet
              elif rx_ == '2':
-                  verticalOffset -= 0.10
-                  #uart0.write('\r verticalOffset :'+str(verticalOffset))
+                  verticalOffset -= 0.10                  
                   files_menu_rx_prev = '2'
-                  mainMenuStatus = menuEnum.parmetersSet
+                  mainMenuStatus = menuEnum.menuEnum.parmetersSet
              elif rx_ == 's' and files_menu_rx_prev != 's':
                   saveParametersFile()
                   files_menu_rx_prev = 's'
-                  mainMenuStatus = menuEnum.mainMenu
+                  mainMenuStatus = menuEnum.menuEnum.mainMenu
              elif rx_== '\x1B' and files_menu_rx_prev != '\x1B':
                   files_menu_rx_prev  = '\x1B'  #ESC
-                  if mainMenuStatus == menuEnum.mainMenu:
+                  if mainMenuStatus == menuEnum.menuEnum.mainMenu:
                       return True
                   else:  
-                      mainMenuStatus = menuEnum.mainMenu
+                      mainMenuStatus = menuEnum.menuEnum.mainMenu
                       parameters_menu_display()
 
              elif rx_== '\x1B' and files_menu_rx_prev  == '\x1B':                 
@@ -147,12 +132,12 @@ def parameters_menu_handler():
                   return  True 
              else:
                  files_menu_rx_prev = '0'
-                 mainMenuStatus = menuEnum.mainMenu
+                 mainMenuStatus = menuEnum.menuEnum.mainMenu
                  parameters_menu_display()
-                 key= rx_.format('hex') # ' '.join('{:02X}'.format(rx_))
+                 key= rx_.format('hex') 
                  uart0.write('\r enter option: '+rx_)
                  print("rx_ =",ord(rx_))
-     if mainMenuStatus == menuEnum.parmetersSet:
+     if mainMenuStatus == menuEnum.menuEnum.parmetersSet:
          verticalOffsetStr = '{0:.1f}'.format(verticalOffset)
          horizonOffsetStr = '{0:.1f}'.format(horizonOffset)
          v = sensorsMenu.readA2D(A2D_PIN_26)
