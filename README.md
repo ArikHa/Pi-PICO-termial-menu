@@ -1,4 +1,4 @@
-# Pi-PICO-termial-menu
+# Pi PICO menu terminal
 Raspberry PI Pico contain two cores, one LED, two UART and more 
 This project explains how to use one of the UART as terminal menu emulator. The main menu led to submenu as files menu, parameters menu and some hardware function tests as sensors menu. The implement of submenu base on recursive function. 
 The file menu used to list the Pico files, delete a record file and get the Pico hardware version  
